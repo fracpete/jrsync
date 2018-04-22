@@ -22,6 +22,8 @@ package com.github.fracpete.jrsync;
 
 import com.github.fracpete.processoutput4j.core.StreamingProcessOutputType;
 import com.github.fracpete.processoutput4j.core.StreamingProcessOwner;
+import com.github.fracpete.processoutput4j.output.StreamingProcessOutput;
+import com.github.fracpete.rsync4j.RSync;
 import org.apache.commons.configuration2.INIConfiguration;
 
 /**
@@ -102,13 +104,119 @@ public class Execute
   }
 
   /**
+   * Configures RSync.
+   *
+   * @return		the configured RSync instance
+   */
+  protected RSync configureRsync() throws Exception {
+    RSync result;
+
+    result = new RSync();
+    if (!m_Configuration.getString(m_Session + ".text_addit").isEmpty())
+      result.setOptions(m_Configuration.getString(m_Session + ".text_addit").split(" "));  // TODO does not adhere to quotes!
+    result.source(m_Configuration.getString(m_Session + ".text_source"));
+    result.destination(m_Configuration.getString(m_Session + ".text_dest"));
+    result.times(m_Configuration.getBoolean(m_Session + ".check_time"));
+    result.perms(m_Configuration.getBoolean(m_Session + ".check_perm"));
+    result.owner(m_Configuration.getBoolean(m_Session + ".check_owner"));
+    result.group(m_Configuration.getBoolean(m_Session + ".check_group"));
+    result.perms(m_Configuration.getBoolean(m_Session + ".check_perm"));
+    result.oneFileSystem(m_Configuration.getBoolean(m_Session + ".check_onefs"));
+    result.verbose(m_Configuration.getBoolean(m_Session + ".check_verbose"));
+    result.progress(m_Configuration.getBoolean(m_Session + ".check_progr"));
+    result.delete(m_Configuration.getBoolean(m_Session + ".check_delete"));
+    result.ignoreExisting(m_Configuration.getBoolean(m_Session + ".check_exist"));
+    result.sizeOnly(m_Configuration.getBoolean(m_Session + ".check_size"));
+    result.update(m_Configuration.getBoolean(m_Session + ".check_skipnew"));
+    if (m_Configuration.getBoolean(m_Session + ".check_windows"))
+      result.modifyWindow(1);
+    result.checksum(m_Configuration.getBoolean(m_Session + ".check_sum"));
+    result.links(m_Configuration.getBoolean(m_Session + ".check_symlink"));
+    result.hardLinks(m_Configuration.getBoolean(m_Session + ".check_hardlink"));
+    result.devices(m_Configuration.getBoolean(m_Session + ".check_dev"));
+    result.hardLinks(m_Configuration.getBoolean(m_Session + ".check_hardlink"));
+    result.existing(m_Configuration.getBoolean(m_Session + ".check_update"));
+    result.partial(m_Configuration.getBoolean(m_Session + ".check_keepart"));
+    result.numericIds(m_Configuration.getBoolean(m_Session + ".check_mapuser"));
+    result.compress(m_Configuration.getBoolean(m_Session + ".check_compr"));
+    result.backup(m_Configuration.getBoolean(m_Session + ".check_backup"));
+    result.itemizeChanges(m_Configuration.getBoolean(m_Session + ".check_itemized"));
+    result.dirs(!m_Configuration.getBoolean(m_Session + ".check_norecur"));
+    result.protectArgs(m_Configuration.getBoolean(m_Session + ".check_protectargs"));
+    result.super_(m_Configuration.getBoolean(m_Session + ".check_superuser"));
+
+    // ignored:
+    // check_browse_files=false
+
+    if (m_DryRun)
+      result.dryRun(true);
+
+    return result;
+  }
+
+  /**
+   * Executes the specified command.
+   *
+   * @param cmd		the command to execute
+   * @param halt	true if to trigger halt (will suppress error message if 'false')
+   * @return		null if successful, otherwise error message
+   */
+  protected String executeCommand(String cmd, boolean halt) {
+    String			result;
+    ProcessBuilder 		builder;
+    StreamingProcessOutput 	output;
+
+    result  = null;
+    builder = new ProcessBuilder();
+    builder.command(cmd);
+    output = new StreamingProcessOutput(this);
+    try {
+      output.monitor(builder);
+    }
+    catch (Exception e) {
+      if (halt)
+        result = "Failed to execute: " + cmd + "\n" + e;
+    }
+
+    return result;
+  }
+
+  /**
    * Performs the rsync execution.
    *
    * @return		null if successful, otherwise error message
    */
   protected String doExecute() {
-    // TODO
-    return null;
+    String			result;
+    RSync			rsync;
+    StreamingProcessOutput	output;
+
+    result = null;
+
+    // pre-execute command
+    if (m_Configuration.getBoolean(m_Session + ".check_com_before"))
+      result = executeCommand(m_Configuration.getString(m_Session + ".text_com_before"), m_Configuration.getBoolean(m_Session + ".check_com_halt"));
+
+    if (result == null) {
+      try {
+	rsync  = configureRsync();
+	output = new StreamingProcessOutput(this);
+	output.monitor(rsync.builder());
+      }
+      catch (Exception e) {
+	System.err.println("Failed to execute rsync!");
+	e.printStackTrace();
+	result = "Failed to execute rsync: " + e;
+      }
+    }
+
+    // post-execute command
+    if (m_Configuration.getBoolean(m_Session + ".check_com_after")) {
+      if ((result == null) || m_Configuration.getBoolean(m_Session + ".check_com_onerror"))
+	result = executeCommand(m_Configuration.getString(m_Session + ".text_com_after"), false);
+    }
+
+    return result;
   }
 
   /**
