@@ -112,6 +112,12 @@
       <artifactId>fcms-widgets</artifactId>
       <version>0.0.13</version>
     </dependency>
+
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-configuration2</artifactId>
+      <version>2.2</version>
+    </dependency>
   </dependencies>
 
   <build>
