@@ -36,6 +36,7 @@ import nz.ac.waikato.cms.gui.core.ParameterPanel;
 import org.apache.commons.configuration2.INIConfiguration;
 
 import javax.swing.BorderFactory;
+import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
@@ -50,13 +51,16 @@ import javax.swing.JTextField;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
+import javax.swing.text.JTextComponent;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
+import java.io.File;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 /**
@@ -362,7 +366,7 @@ public class Main
   protected void finishInit() {
     super.finishInit();
     initMenuBar();
-    selectSession("");
+    selectSession("default");
   }
 
   /**
@@ -477,7 +481,11 @@ public class Main
    * Switches source and destination.
    */
   protected void switchSourceDestination() {
-    // TODO
+    File	dir;
+
+    dir = m_ChooserSource.getCurrent();
+    m_ChooserSource.setCurrent(m_ChooserDestination.getCurrent());
+    m_ChooserDestination.setCurrent(dir);
   }
 
   /**
@@ -543,14 +551,47 @@ public class Main
    */
   public void selectSession(String session) {
     if (session == null)
-      session = "";
+      session = "default";
 
     if (session.isEmpty()) {
       if (m_Sessions.getSections().size() > 0)
         session = m_Sessions.getSections().iterator().next();
     }
+    if (!m_Sessions.getSections().contains(session))
+      Configuration.newSession(m_Sessions, session);
 
-    // TODO
+    m_ComboBoxSessions.setModel(new DefaultComboBoxModel<>(m_Sessions.getSections().toArray(new String[0])));
+    sessionToFields(session);
+  }
+
+  /**
+   * Updates the fields from the configuration.
+   *
+   * @param session	the session to use
+   */
+  protected void sessionToFields(String session) {
+    Iterator<String>	keys;
+    String		key;
+
+    keys = m_Sessions.getSection(session).getKeys();
+    while (keys.hasNext()) {
+      key = keys.next();
+      if (!m_Params.containsKey(key)) {
+	System.err.println("Unknown key: " + key);
+      }
+      else {
+        if (key.startsWith("text_")) {
+          if (m_Params.get(key) instanceof DirectoryChooserPanel)
+	    ((DirectoryChooserPanel) m_Params.get(key)).setCurrent(new File(m_Sessions.getString(session + "." + key)));
+	  else
+	    ((JTextComponent) m_Params.get(key)).setText(m_Sessions.getString(session + "." + key));
+	}
+        else if (key.startsWith("check_"))
+	  ((JCheckBox) m_Params.get(key)).setSelected(m_Sessions.getBoolean(session + "." + key));
+        else
+          System.err.println("Unknown key type: " + key);
+      }
+    }
   }
 
   /**
