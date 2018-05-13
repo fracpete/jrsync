@@ -29,14 +29,35 @@ import net.sourceforge.argparse4j.inf.Namespace;
 import nz.ac.waikato.cms.core.BrowserHelper;
 import nz.ac.waikato.cms.gui.core.BaseFrame;
 import nz.ac.waikato.cms.gui.core.BasePanel;
+import nz.ac.waikato.cms.gui.core.BaseScrollPane;
+import nz.ac.waikato.cms.gui.core.DirectoryChooserPanel;
 import nz.ac.waikato.cms.gui.core.GUIHelper;
+import nz.ac.waikato.cms.gui.core.ParameterPanel;
 import org.apache.commons.configuration2.INIConfiguration;
 
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
+import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
+import javax.swing.JPanel;
+import javax.swing.JTabbedPane;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import java.awt.BorderLayout;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Starts up the user interface, if no parameters given.
@@ -88,6 +109,33 @@ public class Main
   /** the underlying sessions. */
   protected INIConfiguration m_Sessions;
 
+  /** the combobox for the sessions. */
+  protected JComboBox<String> m_ComboBoxSessions;
+
+  /** the button for adding a session. */
+  protected JButton m_ButtonAdd;
+
+  /** the button for deleting a session. */
+  protected JButton m_ButtonDelete;
+
+  /** the button for testing a session. */
+  protected JButton m_ButtonSimulate;
+
+  /** the button for execute a session. */
+  protected JButton m_ButtonExecute;
+
+  /** the tabbed pane. */
+  protected JTabbedPane m_TabbedPane;
+
+  /** the source dir. */
+  protected DirectoryChooserPanel m_ChooserSource;
+
+  /** the destination dir. */
+  protected DirectoryChooserPanel m_ChooserDestination;
+
+  /** the GUI elements. */
+  protected Map<String,Component> m_Params;
+
   /**
    * Initializes the members.
    */
@@ -98,6 +146,7 @@ public class Main
     m_Sessions = Configuration.read();
     if (m_Sessions == null)
       m_Sessions = new INIConfiguration();
+    m_Params = new HashMap<>();
   }
 
   /**
@@ -105,10 +154,205 @@ public class Main
    */
   @Override
   protected void initGUI() {
+    JPanel		panel;
+    JPanel		panelTab;
+    ParameterPanel 	panelParams;
+    ParameterPanel 	panelParams1;
+    ParameterPanel 	panelParams2;
+    final JTextArea 	areaAdditional;
+    JLabel		label;
+
     super.initGUI();
 
     setLayout(new BorderLayout());
-    // TODO
+
+    m_TabbedPane = new JTabbedPane();
+    add(m_TabbedPane, BorderLayout.CENTER);
+
+    // config selection
+    panel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+    add(panel, BorderLayout.NORTH);
+    m_ComboBoxSessions = new JComboBox<>();
+    m_ComboBoxSessions.setPreferredSize(new Dimension(300, 25));
+    panel.add(m_ComboBoxSessions);
+    m_ButtonAdd = new JButton(GUIHelper.getIcon("Add.png"));
+    m_ButtonAdd.addActionListener((ActionEvent e) -> addSession());
+    panel.add(m_ButtonAdd);
+    m_ButtonDelete = new JButton(GUIHelper.getIcon("Delete.png"));
+    m_ButtonDelete.addActionListener((ActionEvent e) -> deleteSession());
+    panel.add(m_ButtonDelete);
+    m_ButtonSimulate = new JButton(GUIHelper.getIcon("Simulate.png"));
+    m_ButtonSimulate.addActionListener((ActionEvent e) -> simulate());
+    panel.add(m_ButtonSimulate);
+    m_ButtonExecute = new JButton(GUIHelper.getIcon("Execute.png"));
+    m_ButtonExecute.addActionListener((ActionEvent e) -> execute());
+    panel.add(m_ButtonExecute);
+
+    // Basic
+    panelTab = new JPanel(new BorderLayout());
+    m_TabbedPane.addTab("Basic", panelTab);
+    panelParams = new ParameterPanel();
+    panelTab.add(panelParams, BorderLayout.NORTH);
+    m_ChooserSource = new DirectoryChooserPanel();
+    m_ChooserSource.setInlineEditingEnabled(true);
+    m_ChooserSource.addChangeListener((ChangeEvent e) -> set("text_source"));
+    m_Params.put("text_source", m_ChooserSource);
+    panelParams.addParameter("Source", m_ChooserSource);
+    m_ChooserDestination = new DirectoryChooserPanel();
+    m_ChooserDestination.setInlineEditingEnabled(true);
+    m_ChooserDestination.addChangeListener((ChangeEvent e) -> set("text_dest"));
+    m_Params.put("text_dest", m_ChooserDestination);
+    panelParams.addParameter("Destination", m_ChooserDestination);
+    panel = new JPanel(new GridLayout(1, 2));
+    panelTab.add(panel, BorderLayout.CENTER);
+    panelParams1 = new ParameterPanel();
+    panel.add(panelParams1);
+    addCheckBox(panelParams1, "Preserve time", "check_time");
+    addCheckBox(panelParams1, "Preserve owner", "check_owner");
+    addCheckBox(panelParams1, "Delete on destination", "check_delete");
+    addCheckBox(panelParams1, "Verbose", "check_verbose");
+    addCheckBox(panelParams1, "Ignore existing", "check_exist");
+    addCheckBox(panelParams1, "Skip newer", "check_skipnew");
+    panelParams2 = new ParameterPanel();
+    panel.add(panelParams2);
+    addCheckBox(panelParams2, "Preserve permissions", "check_perm");
+    addCheckBox(panelParams2, "Preserve group", "check_group");
+    addCheckBox(panelParams2, "Do not leave filesystem", "check_onefs");
+    addCheckBox(panelParams2, "Show transfer progress", "check_progr");
+    addCheckBox(panelParams2, "Size only", "check_size");
+    addCheckBox(panelParams2, "Windows compatibility", "check_windows");
+
+    // Advanced
+    panelTab = new JPanel(new BorderLayout());
+    m_TabbedPane.addTab("Advanced options", panelTab);
+    panel = new JPanel(new GridLayout(1, 2));
+    panelTab.add(panel, BorderLayout.NORTH);
+    panelParams1 = new ParameterPanel();
+    panel.add(panelParams1);
+    addCheckBox(panelParams1, "Always checksum", "check_sum");
+    addCheckBox(panelParams1, "Preserve devices", "check_dev");
+    addCheckBox(panelParams1, "Keep partially transferred files", "check_keepart");
+    addCheckBox(panelParams1, "Copy symlinks as symlinks", "check_symlink");
+    addCheckBox(panelParams1, "Make backups", "check_backup");
+    addCheckBox(panelParams1, "Disable recursion", "check_norecur");
+    panelParams2 = new ParameterPanel();
+    panel.add(panelParams2);
+    addCheckBox(panelParams2, "Compress file data", "check_compr");
+    addCheckBox(panelParams2, "Only update existing", "check_update");
+    addCheckBox(panelParams2, "Don't map uid/gid values", "check_mapuser");
+    addCheckBox(panelParams2, "Copy hardlinks as hardlinks", "check_hardlink");
+    addCheckBox(panelParams2, "Show itemized changes list", "check_itemized");
+    addCheckBox(panelParams2, "Protect remote args", "check_protectargs");
+    panel = new JPanel(new BorderLayout(5, 5));
+    panel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+    panelTab.add(panel, BorderLayout.CENTER);
+    label = new JLabel("Additional options:");
+    panel.add(label, BorderLayout.NORTH);
+    areaAdditional = new JTextArea(5, 40);
+    areaAdditional.getDocument().addDocumentListener(new DocumentListener() {
+      @Override
+      public void insertUpdate(DocumentEvent e) {
+	set("text_addit", areaAdditional.getText());
+      }
+      @Override
+      public void removeUpdate(DocumentEvent e) {
+	set("text_addit", areaAdditional.getText());
+      }
+      @Override
+      public void changedUpdate(DocumentEvent e) {
+	set("text_addit", areaAdditional.getText());
+      }
+    });
+    m_Params.put("text_addit", areaAdditional);
+    panel.add(new BaseScrollPane(areaAdditional), BorderLayout.CENTER);
+
+    // Extra
+    panelTab = new JPanel(new BorderLayout());
+    m_TabbedPane.addTab("Extra options", panelTab);
+    panelParams = new ParameterPanel();
+    panelTab.add(panelParams, BorderLayout.CENTER);
+    addCheckBox(panelParams, "Execute command before rsync", "check_com_before");
+    addTextField(panelParams, "", "text_com_before");
+    addCheckBox(panelParams, "Halt on failure", "check_com_halt");
+    addCheckBox(panelParams, "Execute command after rsync", "check_com_after");
+    addTextField(panelParams, "", "text_com_after");
+    addCheckBox(panelParams, "On rsync error only", "check_com_onerror");
+    addCheckBox(panelParams, "Browse files instead of folders", "check_browse_files");
+    addCheckBox(panelParams, "Run as superuser", "check_superuser");
+  }
+
+  /**
+   * Adds a checkbox.
+   *
+   * @param paramPanel	the panel to add the check box to
+   * @param label	the label for the checkbox
+   * @param key		the key to store it under and for updating the session
+   */
+  protected void addCheckBox(ParameterPanel paramPanel, String label, final String key) {
+    JCheckBox box;
+
+    box = new JCheckBox();
+    box.addActionListener((ActionEvent e) -> set(key));
+    m_Params.put(key, box);
+    paramPanel.addParameter(label, box);
+  }
+
+  /**
+   * Adds a text area.
+   *
+   * @param paramPanel	the panel to add the text area to
+   * @param label	the label for the text area
+   * @param key		the key to store it under and for updating the session
+   */
+  protected void addTextArea(ParameterPanel paramPanel, String label, final String key) {
+    final JTextArea area;
+
+    area = new JTextArea(5, 40);
+    area.getDocument().addDocumentListener(new DocumentListener() {
+      @Override
+      public void insertUpdate(DocumentEvent e) {
+	set(key, area.getText());
+      }
+      @Override
+      public void removeUpdate(DocumentEvent e) {
+	set(key, area.getText());
+      }
+      @Override
+      public void changedUpdate(DocumentEvent e) {
+	set(key, area.getText());
+      }
+    });
+    m_Params.put(key, area);
+    paramPanel.addParameter(label, area);
+  }
+
+  /**
+   * Adds a text field.
+   *
+   * @param paramPanel	the panel to add the text field to
+   * @param label	the label for the text field
+   * @param key		the key to store it under and for updating the session
+   */
+  protected void addTextField(ParameterPanel paramPanel, String label, final String key) {
+    final JTextField text;
+
+    text = new JTextField(20);
+    text.getDocument().addDocumentListener(new DocumentListener() {
+      @Override
+      public void insertUpdate(DocumentEvent e) {
+	set(key, text.getText());
+      }
+      @Override
+      public void removeUpdate(DocumentEvent e) {
+	set(key, text.getText());
+      }
+      @Override
+      public void changedUpdate(DocumentEvent e) {
+	set(key, text.getText());
+      }
+    });
+    m_Params.put(key, text);
+    paramPanel.addParameter(label, text);
   }
 
   /**
@@ -137,14 +381,14 @@ public class Main
     m_MenuBar.add(menu);
 
     item = new JMenuItem("Browse source", GUIHelper.getIcon("Empty.png"));
-    item.addActionListener((ActionEvent e) -> browse(true));
+    item.addActionListener((ActionEvent e) -> m_ChooserSource.choose());
     menu.add(item);
     m_MenuItemFileBrowseSource = item;
 
     item = new JMenuItem("Browse destination", GUIHelper.getIcon("Empty.png"));
-    item.addActionListener((ActionEvent e) -> browse(false));
+    item.addActionListener((ActionEvent e) -> m_ChooserDestination.choose());
     menu.add(item);
-    m_MenuItemFileBrowseSource = item;
+    m_MenuItemFileBrowseDestination = item;
 
     item = new JMenuItem("Switch source and destination", GUIHelper.getIcon("Empty.png"));
     item.addActionListener((ActionEvent e) -> switchSourceDestination());
@@ -230,15 +474,6 @@ public class Main
   }
 
   /**
-   * Lets the user select the source/destination directory.
-   *
-   * @param source	whether to select source or destination
-   */
-  protected void browse(boolean source) {
-    // TODO
-  }
-
-  /**
    * Switches source and destination.
    */
   protected void switchSourceDestination() {
@@ -319,6 +554,43 @@ public class Main
   }
 
   /**
+   * Sets the value of the component in the current session.
+   *
+   * @param key		the key
+   */
+  protected void set(String key) {
+    Component	comp;
+
+    comp = m_Params.get(key);
+    if (comp instanceof JCheckBox)
+      set(key, ((JCheckBox) comp).isSelected());
+    else if (comp instanceof DirectoryChooserPanel)
+      set(key, ((DirectoryChooserPanel) comp).getCurrent().toString());
+    else if (comp instanceof JTextField)
+      set(key, ((JTextField) comp).getText());
+  }
+
+  /**
+   * Sets the key/value in the current session.
+   *
+   * @param key		the key
+   * @param value	the associated value
+   */
+  protected void set(String key, String value) {
+    // TODO
+  }
+
+  /**
+   * Sets the key/value in the current session.
+   *
+   * @param key		the key
+   * @param value	the associated value
+   */
+  protected void set(String key, boolean value) {
+    // TODO
+  }
+
+  /**
    * Displays the user interface.
    *
    * @param session	the session to select initially, can be null or empty
@@ -330,11 +602,12 @@ public class Main
     main = new Main();
     main.selectSession(session);
     frame = new BaseFrame("jrsync");
+    frame.setIconImage(GUIHelper.getIcon("jrsync.png").getImage());
     frame.setDefaultCloseOperation(BaseFrame.EXIT_ON_CLOSE);
     frame.getContentPane().setLayout(new BorderLayout());
     frame.getContentPane().add(main, BorderLayout.CENTER);
     frame.setJMenuBar(main.getMenuBar());
-    frame.setSize(600, 600);
+    frame.setSize(600, 400);
     frame.setLocationRelativeTo(null);
     frame.setVisible(true);
   }
