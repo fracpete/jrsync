@@ -40,6 +40,9 @@ import java.io.FileWriter;
  */
 public class Configuration {
 
+  /** the name of the default session. */
+  public final static String DEFAULT = "default";
+
   /**
    * Returns the configuration directory to use.
    *
@@ -51,7 +54,7 @@ public class Configuration {
     if (SystemUtils.IS_OS_WINDOWS)
       result = System.getProperty("user.home") + File.separator + "jrsyncfiles";
     else
-      result = System.getProperty("user.home") + File.separator + ".local" + File.separator + "jrsync";
+      result = System.getProperty("user.home") + File.separator + ".local" + File.separator + "share" +File.separator + "jrsync";
 
     return result;
   }
@@ -151,34 +154,34 @@ public class Configuration {
     config.setProperty(session + ".text_com_before", "");
     config.setProperty(session + ".text_com_after", "");
     config.setProperty(session + ".text_addit", "");
-    config.setProperty(session + ".check_time", "false");
-    config.setProperty(session + ".check_perm", "false");
-    config.setProperty(session + ".check_owner", "false");
-    config.setProperty(session + ".check_group", "false");
-    config.setProperty(session + ".check_onefs", "false");
-    config.setProperty(session + ".check_verbose", "false");
-    config.setProperty(session + ".check_progr", "false");
-    config.setProperty(session + ".check_delete", "false");
-    config.setProperty(session + ".check_exist", "false");
-    config.setProperty(session + ".check_size", "false");
-    config.setProperty(session + ".check_skipnew", "false");
-    config.setProperty(session + ".check_windows", "false");
-    config.setProperty(session + ".check_sum", "false");
-    config.setProperty(session + ".check_symlink", "false");
-    config.setProperty(session + ".check_hardlink", "false");
-    config.setProperty(session + ".check_dev", "false");
-    config.setProperty(session + ".check_update", "false");
-    config.setProperty(session + ".check_keepart", "false");
-    config.setProperty(session + ".check_mapuser", "false");
-    config.setProperty(session + ".check_compr", "false");
-    config.setProperty(session + ".check_backup", "false");
-    config.setProperty(session + ".check_itemized", "false");
-    config.setProperty(session + ".check_norecur", "false");
-    config.setProperty(session + ".check_protectargs", "false");
-    config.setProperty(session + ".check_com_before", "false");
-    config.setProperty(session + ".check_com_halt", "false");
-    config.setProperty(session + ".check_com_after", "false");
-    config.setProperty(session + ".check_com_onerror", "false");
-    config.setProperty(session + ".check_browse_files", "false");
+    config.setProperty(session + ".check_time", false);
+    config.setProperty(session + ".check_perm", false);
+    config.setProperty(session + ".check_owner", false);
+    config.setProperty(session + ".check_group", false);
+    config.setProperty(session + ".check_onefs", false);
+    config.setProperty(session + ".check_verbose", false);
+    config.setProperty(session + ".check_progr", false);
+    config.setProperty(session + ".check_delete", false);
+    config.setProperty(session + ".check_exist", false);
+    config.setProperty(session + ".check_size", false);
+    config.setProperty(session + ".check_skipnew", false);
+    config.setProperty(session + ".check_windows", false);
+    config.setProperty(session + ".check_sum", false);
+    config.setProperty(session + ".check_symlink", false);
+    config.setProperty(session + ".check_hardlink", false);
+    config.setProperty(session + ".check_dev", false);
+    config.setProperty(session + ".check_update", false);
+    config.setProperty(session + ".check_keepart", false);
+    config.setProperty(session + ".check_mapuser", false);
+    config.setProperty(session + ".check_compr", false);
+    config.setProperty(session + ".check_backup", false);
+    config.setProperty(session + ".check_itemized", false);
+    config.setProperty(session + ".check_norecur", false);
+    config.setProperty(session + ".check_protectargs", false);
+    config.setProperty(session + ".check_com_before", false);
+    config.setProperty(session + ".check_com_halt", false);
+    config.setProperty(session + ".check_com_after", false);
+    config.setProperty(session + ".check_com_onerror", false);
+    config.setProperty(session + ".check_browse_files", false);
   }
 }
