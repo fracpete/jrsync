@@ -44,6 +44,7 @@ import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
@@ -100,6 +101,9 @@ public class Main
 
   /** the Sessions -> Delet menu item. */
   protected JMenuItem m_MenuItemSessionsDelete;
+
+  /** the Sessions -> Save menu item. */
+  protected JMenuItem m_MenuItemSessionsSave;
 
   /** the Sessions -> Import menu item. */
   protected JMenuItem m_MenuItemSessionsImport;
@@ -283,6 +287,7 @@ public class Main
     addCheckBox(panelParams, "On rsync error only", "check_com_onerror");
     addCheckBox(panelParams, "Browse files instead of folders", "check_browse_files");
     addCheckBox(panelParams, "Run as superuser", "check_superuser");
+    addTextField(panelParams, "Notes", "text_notes");
   }
 
   /**
@@ -366,7 +371,7 @@ public class Main
   protected void finishInit() {
     super.finishInit();
     initMenuBar();
-    selectSession("default");
+    selectSession(Configuration.DEFAULT);
   }
 
   /**
@@ -438,6 +443,11 @@ public class Main
     item.addActionListener((ActionEvent e) -> deleteSession());
     menu.add(item);
     m_MenuItemSessionsDelete = item;
+
+    item = new JMenuItem("Save", GUIHelper.getIcon("Save.png"));
+    item.addActionListener((ActionEvent e) -> saveSessions());
+    menu.add(item);
+    m_MenuItemSessionsSave = item;
 
     item = new JMenuItem("Import", GUIHelper.getIcon("Empty.png"));
     item.addActionListener((ActionEvent e) -> importSession());
@@ -520,14 +530,37 @@ public class Main
    * Adds a new session.
    */
   protected void addSession() {
-    // TODO
+    String	session;
+
+    session = JOptionPane.showInputDialog("Please enter session name");
+    if (session == null)
+      return;
+
+    Configuration.newSession(m_Sessions, session);
+    m_ComboBoxSessions.setModel(new DefaultComboBoxModel<>(m_Sessions.getSections().toArray(new String[0])));
+    m_ComboBoxSessions.setSelectedItem(session);
+    selectSession(session);
   }
 
   /**
    * Deletes the current session.
    */
   protected void deleteSession() {
-    // TODO
+    if (m_ComboBoxSessions.getSelectedIndex() == -1)
+      return;
+    m_Sessions.clearTree("" + m_ComboBoxSessions.getSelectedItem());
+    if (m_Sessions.getSections().size() == 0)
+      Configuration.newSession(m_Sessions, Configuration.DEFAULT);
+    m_ComboBoxSessions.setModel(new DefaultComboBoxModel<>(m_Sessions.getSections().toArray(new String[0])));
+    m_ComboBoxSessions.setSelectedIndex(0);
+    selectSession("" + m_ComboBoxSessions.getSelectedItem());
+  }
+
+  /**
+   * Saves the sessions to disk.
+   */
+  protected void saveSessions() {
+    Configuration.write(m_Sessions);
   }
 
   /**
@@ -551,7 +584,7 @@ public class Main
    */
   public void selectSession(String session) {
     if (session == null)
-      session = "default";
+      session = Configuration.DEFAULT;
 
     if (session.isEmpty()) {
       if (m_Sessions.getSections().size() > 0)
@@ -618,7 +651,14 @@ public class Main
    * @param value	the associated value
    */
   protected void set(String key, String value) {
-    // TODO
+    String	session;
+
+    if (m_ComboBoxSessions.getSelectedIndex() == -1) {
+      System.err.println("No session selected, cannot set string value");
+      return;
+    }
+    session = "" + m_ComboBoxSessions.getSelectedItem();
+    m_Sessions.setProperty(session + "." + key, value);
   }
 
   /**
@@ -628,7 +668,14 @@ public class Main
    * @param value	the associated value
    */
   protected void set(String key, boolean value) {
-    // TODO
+    String	session;
+
+    if (m_ComboBoxSessions.getSelectedIndex() == -1) {
+      System.err.println("No session selected, cannot set boolean value");
+      return;
+    }
+    session = "" + m_ComboBoxSessions.getSelectedItem();
+    m_Sessions.setProperty(session + "." + key, value);
   }
 
   /**
