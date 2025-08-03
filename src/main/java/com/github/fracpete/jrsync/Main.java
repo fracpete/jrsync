@@ -15,11 +15,12 @@
 
 /*
  * Main.java
- * Copyright (C) 2018 University of Waikato, Hamilton, NZ
+ * Copyright (C) 2018 FracPete
  */
 
 package com.github.fracpete.jrsync;
 
+import com.formdev.flatlaf.FlatLightLaf;
 import com.github.fracpete.jrsync.Execute.ConsoleOutputListener;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.impl.Arguments;
@@ -733,7 +734,9 @@ public class Main
     Namespace 		ns;
     String		session;
 
-    parser = ArgumentParsers.newArgumentParser(Main.class.getName());
+    FlatLightLaf.setup();
+
+    parser = ArgumentParsers.newFor(Main.class.getName()).build();
     parser.description("Frontend for rsync command-line execution.");
     parser.addArgument("-e")
       .action(Arguments.storeTrue())

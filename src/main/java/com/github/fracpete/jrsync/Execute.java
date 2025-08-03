@@ -15,7 +15,7 @@
 
 /*
  * Execute.java
- * Copyright (C) 2018 University of Waikato, Hamilton, NZ
+ * Copyright (C) 2018-2025 FracPete
  */
 
 package com.github.fracpete.jrsync;
